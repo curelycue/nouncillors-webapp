@@ -1,12 +1,12 @@
 import axios from 'axios';
 
-const RELAYER_API_ENDPOINT = 'https://defender.openzeppelin.com/autotasks/dsdsfff';
+const defenderRelayerEndpoint = process.env.DEFENDER_RELAYER_ENDPOINT;
 
 const RelayerService = {
   async relayTransaction(signedTxData) {
     try {
       // Send the signed transaction data to the Defender Relayer
-      const response = await axios.post(RELAYER_API_ENDPOINT, signedTxData);
+      const response = await axios.post(defenderRelayerEndpoint, signedTxData);
 
       // Handle and return the response
       console.log('Relayer response:', response.data);

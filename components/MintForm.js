@@ -1,6 +1,7 @@
 import { ethers } from "ethers";
 import React, { useState } from 'react';
 import RelayerService from './RelayerService'; // Import the RelayerService
+import NouncillorsToken from '../contracts/NouncillorsToken.json';
 
 const MintForm = () => {
   const [userAddress, setUserAddress] = useState('');
@@ -11,7 +12,6 @@ const MintForm = () => {
     try {
       if (window.ethereum) {
         const provider = new ethers.BrowserProvider(window.ethereum);
-        //await provider.send("eth_requestAccounts", []);
         const signer = await provider.getSigner();
         const address = await signer.getAddress();
         setUserAddress(address);
@@ -47,31 +47,51 @@ const MintForm = () => {
   const mintToken = async () => {
   setLoading(true);
   try {
+    const forwarderAddress = '0x0Fe84a13dbAb8A9Acf2dB3B88a6f91c30C5F5df8';
+    const nouncillorsTokenAddress = '0x9dFDb199b40D10360f35a119545BC8956a582cE8';
+
+    // Create a new ethers provider
     const provider = new ethers.BrowserProvider(window.ethereum);
-    const signer = provider.getSigner();
-    const contract = new ethers.Contract(contractAddress, contractABI, signer);
+    // Connect the signer
+    const signer = await provider.getSigner();
+    await console.log("The signer is:", signer);
+
+    // Fetch the signer's address and nonce
+    const address = await signer.getAddress();
+    const nonce = await signer.getNonce();
+    console.log("The signer addressis", address,", and nonce is ", nonce);
+
+
+    const { abi: nouncillorsTokenABI } = NouncillorsToken;
+    const contract = new ethers.Contract(nouncillorsTokenAddress, nouncillorsTokenABI, signer);
 
     // Encode the mint function call
     const data = contract.interface.encodeFunctionData('mint', [merkleProof]);
+    console.log("The encoded data is: ", data);
 
-    // Create the meta-transaction request
+    // Automatically estimates gas
+    const estimatedGas = await signer.estimateGas({ /* transaction details here */ });
+    // Convert BigInt to String
+    const gasLimitString = estimatedGas.toString();
+
+     // Create the meta-transaction request
     const request = {
-      from: await signer.getAddress(),
-      to: contractAddress,
+      from: address,
+      to: nouncillorsTokenAddress,
       value: 0,
-      gas: 1000000, // Estimate this value
-      nonce: await contract.nonces(await signer.getAddress()),
+      gas: gasLimitString,
+      nonce: nonce,
       deadline: Math.floor(Date.now() / 1000) + 3600, // 1 hour from now
-      data,
+      data, // Your transaction data
     };
-
+    console.log("This the request", request);
     // Sign the transaction
-    const signature = await signer._signTypedData(
+    const signature = await signer.signTypedData(
       // Domain
       {
         name: 'NouncillorsToken',
         version: '1',
-        chainId: await signer.getChainId(),
+        chainId: await provider.getNetwork().chainId,
         verifyingContract: forwarderAddress,
       },
       // Types
@@ -87,8 +107,9 @@ const MintForm = () => {
         ],
       },
       // Value
-      request,
+      request
     );
+    console.log("Transaction signed succesfully");
 
     // Send the signed transaction to the Defender Relayer
     const relayedResponse = await RelayerService.relayTransaction({ ...request, signature });
