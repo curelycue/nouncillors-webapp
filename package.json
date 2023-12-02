@@ -14,11 +14,14 @@
     "react-dom": "^18"
   },
   "devDependencies": {
+    "@openzeppelin/defender-relay-client": "^1.52.0",
     "axios": "^1.6.2",
     "dotenv": "^16.3.1",
     "ethers": "^6.9.0",
+    "install": "^0.13.0",
     "keccak256": "^1.0.6",
     "merkletreejs": "^0.3.11",
-    "node-fetch": "^3.3.2"
+    "node-fetch": "^3.3.2",
+    "npm": "^10.2.4"
   }
 }
